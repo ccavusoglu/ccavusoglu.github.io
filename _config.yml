@@ -79,8 +79,8 @@ analytics:
 author:
   name             : *name
   avatar           : "/assets/images/prof.jpg"
-  bio              : "Software Engineer at Peakgames"
-  location         : "Istanbul, TR"
+  bio              : "Software Engineer"
+  location         : "Izmir, TR"
   email            : "cavusoglucagatay@gmail.com"
   uri              :
   bitbucket        :
