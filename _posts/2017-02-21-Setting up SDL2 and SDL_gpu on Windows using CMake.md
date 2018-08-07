@@ -26,7 +26,7 @@ optimized them better.
 First, we should install necessary **MinGW** packages.
 Grab the installer from <https://sourceforge.net/projects/mingw/files/> and install the base, developer-toolkit, gcc-g++ and msys-base packages.
 
-![](../../assets/images/mingw_setup.png)
+![](/assets/images/mingw_setup.PNG)
 
 Download and install **CMake**.
 <br/>
