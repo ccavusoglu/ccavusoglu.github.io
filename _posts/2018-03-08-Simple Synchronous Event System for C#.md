@@ -24,9 +24,11 @@ The implementation contains an interface *IEventBase,* a manager *EventManager* 
 *EventManager* pretty much self explanatory. It stores *Actions* and *Type* pairs and invokes subscribed *Actions* when an event is fired. It's thread safe by utilizing .NET's *ConcurrentDictionary* and *ImmutableList*. If you think performance overhead of *ImmutableList* isn't neglectable in your use case, using a *List* and wrapping list operations with a lock can be preferred. Refer to this article <https://msdn.microsoft.com/en-us/magazine/mt795189.aspx> for a detailed analysis of *Immutable* types.
 
 ```c#
-public class EventManager
+public sealed class EventManager
 {
-    private static EventManager Instance;
+    private static EventManager InstanceSelf;
+    private static readonly object InstanceLock = new object();
+
     private readonly ConcurrentDictionary<Type, ImmutableList<Action<IEventBase>>> subscribers;
 
     private EventManager()
@@ -34,9 +36,15 @@ public class EventManager
         subscribers = new ConcurrentDictionary<Type, ImmutableList<Action<IEventBase>>>();
     }
 
-    public static EventManager GetInstance()
+    public static EventManager Instance
     {
-        return Instance ?? (Instance = new EventManager());
+        get
+        {
+            lock (InstanceLock)
+            {
+                return InstanceSelf ?? (InstanceSelf = new EventManager());
+            }
+        }
     }
 
     public void Fire<T>(T obj) where T : IEventBase
@@ -116,11 +124,11 @@ public class AnotherConcreteEvent : IEventBase
 Usage:
 
 ```c#
-// subscriber
-eventManager.Subscribe<SomeConcreteEvent>(o => 
-	Console.WriteLine($"SomeConcreteEvent handled in SubscriberClass: {((SomeConcreteEvent)o).Param}"));
+// subscribe
+eventManager.Subscribe<SomeConcreteEvent>(o =>
+    Console.WriteLine($"SomeConcreteEvent handled in SubscriberClass: {((SomeConcreteEvent)o).Param}"));
 
-// publisher
+// publish
 eventManager.Fire(new SomeConcreteEvent
 {
     Param = "Event fired from PublisherClass::DoWork"
@@ -130,10 +138,11 @@ eventManager.Fire(new SomeConcreteEvent
 Usage with UnSubscribe:
 
 ```c#
-// subscriber
+// subscribe
 anotherConcreteEventCallback =
     eventManager.Subscribe<AnotherConcreteEvent>(o => HandleAnotherConcreteEvent((AnotherConcreteEvent)o));
 
+// handle
 private void HandleAnotherConcreteEvent(AnotherConcreteEvent anotherConcreteEvent)
 {
     eventManager.UnSubscribe<AnotherConcreteEvent>(anotherConcreteEventCallback);
@@ -141,7 +150,7 @@ private void HandleAnotherConcreteEvent(AnotherConcreteEvent anotherConcreteEven
     Console.WriteLine($"AnotherConcreteEvent handled in SubscriberClass: {anotherConcreteEvent.Param}");
 }
 
-// publisher
+// publish
 eventManager.Fire(new AnotherConcreteEvent
 {
     Param = "Event fired from AnotherClass::DoAnotherWork"
